@@ -60,6 +60,16 @@ Un singolo controllo fallito non basta a dare l'allarme:
 - una risposta lenta compare nell'interfaccia ma non apre incidenti;
 - l'incidente **si chiude da solo** quando i controlli tornano regolari.
 
+Amministratori e operatori possono intervenire a mano dalla scheda dell'incidente:
+
+- **Prendi in carico**: segna chi se ne sta occupando e ferma i promemoria via mail; la mail di
+  rientro parte comunque;
+- **Aggiungi nota**: lascia un appunto nella cronologia, anche a incidente chiuso;
+- **Chiudi**: chiude subito l'incidente. Se il problema è ancora presente, il prossimo
+  controllo fallito ne apre uno nuovo.
+
+Ogni azione finisce nella cronologia con il nome di chi l'ha fatta e nell'audit log.
+
 ### 4. Mail di alert
 
 | Gravità | Quando parte | Ripetizione | Rientro |
@@ -78,7 +88,8 @@ ritentato dopo 5 minuti senza fermare il worker.
 - **Siti**: inventario; nella scheda di ogni sito i controlli con l'ultimo esito, il tempo di
   risposta delle ultime 24 ore, l'uptime e gli incidenti aperti. I controlli si possono anche
   lanciare a mano.
-- **Incidenti**: elenco filtrabile; in ogni scheda cronologia, azione consigliata e mail inviate.
+- **Incidenti**: elenco filtrabile; in ogni scheda cronologia, azione consigliata, mail inviate
+  e le azioni manuali.
 - **Utenti** e **Audit log** (solo amministratori).
 
 Lo stato non è mai affidato al solo colore: ogni etichetta ha un'icona e un testo. L'interfaccia
@@ -89,7 +100,7 @@ si usa anche da telefono.
 | Ruolo | Permessi |
 |---|---|
 | Amministratore | tutto: inventario siti, utenti, audit log |
-| Operatore | consultazione ed esecuzione manuale dei controlli |
+| Operatore | consultazione, esecuzione manuale dei controlli, gestione degli incidenti |
 | Sola lettura | consultazione |
 
 Password con hash Argon2, sessioni con cookie `HttpOnly`, protezione CSRF, limite ai tentativi di
@@ -232,7 +243,6 @@ scritto a mano, grafici SVG generati dal server.
 
 Limiti attuali da conoscere:
 
-- le azioni manuali sugli incidenti (presa in carico, note, chiusura) non ci sono ancora;
 - il worker non controlla sé stesso: se si ferma, l'interfaccia lo mostra ma non parte una mail;
 - la messa in produzione (reverse proxy, HTTPS, backup) non è ancora documentata.
 

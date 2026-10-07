@@ -279,6 +279,11 @@ p { margin: 0 0 10px; }
 }
 .row-name { font-weight: 600; white-space: nowrap; }
 .block { margin-bottom: 12px; }
+.pre-line { white-space: pre-line; overflow-wrap: anywhere; }
+.note-form { display: grid; gap: 6px; padding: 10px 14px 14px; border-top: 1px solid var(--border); }
+.note-form label { margin: 0; }
+.note-form label:has(+ :required)::after { content: none; }
+.note-form .btn { justify-self: start; }
 .empty { margin: 0; padding: 6px 14px 12px; }
 .empty-inline { margin: 0; }
 

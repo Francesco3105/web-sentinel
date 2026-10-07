@@ -260,7 +260,8 @@ def process(
                 db.add(_log(incident, OPENED, "-", subject, DEDUPLICATED, now))
                 continue
             sent += _deliver(db, OPENED, incident, now, settings, sender)
-        elif _last(announced, SENT):
+        elif _last(announced, SENT) and incident.status != IncidentStatus.ACKNOWLEDGED:
+            # No reminders once someone has taken charge of the incident.
             every = _reminder_minutes(db, incident, rule)
             last_sent = _last(logs, SENT)
             reminders = [log for log in logs if log.kind == REMINDER]

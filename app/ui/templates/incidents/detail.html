@@ -9,7 +9,21 @@
     </div>
     <span class="mono muted">Incidente #{{ incident.id }}</span>
   </div>
-  <div class="actions"><a href="/incidents">Tutti gli incidenti</a></div>
+  <div class="actions">
+    {% if can_manage and incident.status == 'open' %}
+    <form method="post" action="/incidents/{{ incident.id }}/acknowledge">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="btn">Prendi in carico</button>
+    </form>
+    {% endif %}
+    {% if can_manage and incident.status != 'closed' %}
+    <form method="post" action="/incidents/{{ incident.id }}/close" data-confirm="Chiudere l'incidente #{{ incident.id }}? Se il problema è ancora presente, il prossimo controllo fallito ne aprirà uno nuovo.">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="btn btn-secondary">Chiudi</button>
+    </form>
+    {% endif %}
+    <a href="/incidents">Tutti gli incidenti</a>
+  </div>
 </div>
 
 <div class="detail">
@@ -24,12 +38,20 @@
             <tr>
               <td class="cell-status mono nowrap">{{ event.created_at | dt('%d/%m/%Y %H:%M:%S') }}</td>
               <td class="cell-main"><span class="row-name">{{ event_labels.get(event.kind, event.kind) }}</span></td>
-              <td data-label="Dettaglio">{{ event.message }}</td>
+              <td data-label="Dettaglio"><span class="pre-line">{{ event.message }}</span>{% if event.user_id %} <span class="muted nowrap">({{ authors.get(event.user_id, 'utente rimosso') }})</span>{% endif %}</td>
             </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
+      {% if can_manage %}
+      <form class="note-form" method="post" action="/incidents/{{ incident.id }}/notes">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <label for="note">Aggiungi nota</label>
+        <textarea id="note" name="text" rows="2" maxlength="{{ note_max_length }}" required></textarea>
+        <button type="submit" class="btn btn-secondary">Aggiungi nota</button>
+      </form>
+      {% endif %}
     </section>
 
     <section class="card card-flush">
@@ -64,6 +86,10 @@
     <dl class="facts">
       <dt>Stato</dt>
       <dd>{% if incident.status == 'closed' %}<span class="badge badge-off">Chiuso</span>{% else %}{{ incident_status_labels[incident.status] }}{% endif %}</dd>
+      {% if incident.assigned_to_id %}
+      <dt>In carico a</dt>
+      <dd><span class="mono wrap">{{ authors.get(incident.assigned_to_id, 'utente rimosso') }}</span><br><span class="mono muted">dal {{ incident.acknowledged_at | dt }}</span></dd>
+      {% endif %}
       <dt>Sito</dt>
       <dd>{% if site %}<a href="/sites/{{ site.id }}">{{ site.name }}</a>{% else %}–{% endif %}</dd>
       <dt>Aperto</dt>

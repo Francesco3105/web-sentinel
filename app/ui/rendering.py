@@ -41,6 +41,9 @@ EVENT_LABELS = {
     "recovered": "Rientrato",
     "severity_changed": "Cambio di gravità",
     "correlated": "Altro controllo fallito",
+    "acknowledged": "Preso in carico",
+    "note": "Nota",
+    "closed_manually": "Chiuso a mano",
 }
 MAIL_KIND_LABELS = {"opened": "Apertura", "reminder": "Promemoria", "recovery": "Rientro"}
 CONTACT_LABELS = {"technical": "Referente tecnico", "business": "Referente business"}
@@ -55,6 +58,9 @@ ACTION_LABELS = {
     "run_all_checks": "Controlli eseguiti a mano su tutti i siti",
     "user_create": "Utente creato",
     "user_update": "Utente modificato",
+    "incident_acknowledge": "Incidente preso in carico",
+    "incident_note": "Nota aggiunta a un incidente",
+    "incident_close": "Incidente chiuso a mano",
 }
 
 

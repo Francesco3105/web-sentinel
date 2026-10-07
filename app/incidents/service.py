@@ -16,6 +16,7 @@ from app.db.models import (
     IncidentEvent,
     IncidentStatus,
     Severity,
+    User,
 )
 
 DEFAULT_TLS_ALERT_DAYS = 7
@@ -186,3 +187,46 @@ def evaluate(db: Session, check: Check, outcome: Outcome, now: datetime) -> Inci
         own.title = _title(check, outcome)
         own.recommended_action = action
     return own
+
+
+class IncidentClosed(Exception):
+    """The action needs an incident that is still open."""
+
+
+def acknowledge(incident: Incident, user: User, now: datetime) -> None:
+    """Someone takes charge: reminders stop, the incident stays open until it recovers."""
+    if incident.status == IncidentStatus.CLOSED:
+        raise IncidentClosed
+    incident.status = IncidentStatus.ACKNOWLEDGED
+    incident.assigned_to_id = user.id
+    incident.acknowledged_at = now
+    incident.events.append(
+        IncidentEvent(
+            kind="acknowledged",
+            message="Incidente preso in carico",
+            user_id=user.id,
+            created_at=now,
+        )
+    )
+
+
+def add_note(incident: Incident, user: User, text: str, now: datetime) -> None:
+    incident.events.append(
+        IncidentEvent(kind="note", message=text, user_id=user.id, created_at=now)
+    )
+
+
+def close_manually(incident: Incident, user: User, now: datetime) -> None:
+    """Close by hand. If the problem is still there the next failed check opens a new one."""
+    if incident.status == IncidentStatus.CLOSED:
+        raise IncidentClosed
+    incident.status = IncidentStatus.CLOSED
+    incident.closed_at = now
+    incident.events.append(
+        IncidentEvent(
+            kind="closed_manually",
+            message="Incidente chiuso a mano",
+            user_id=user.id,
+            created_at=now,
+        )
+    )
