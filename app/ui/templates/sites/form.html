@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Modifica sito' if site else 'Nuovo sito' }}{% endblock %}
+{% macro err(name) %}{% if form.errors.get(name) %}<p class="field-error" role="alert">{{ form.errors[name] }}</p>{% endif %}{% endmacro %}
+{% block content %}
+<div class="page-head"><h1>{{ 'Modifica ' ~ site.name if site else 'Nuovo sito' }}</h1></div>
+<form class="card form" method="post" action="{{ '/sites/' ~ site.id ~ '/edit' if site else '/sites' }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+  <fieldset>
+    <legend>Sito</legend>
+    <div class="field">
+      <label for="name">Nome</label>
+      <input id="name" name="name" value="{{ form.name }}" maxlength="200" required>
+      {{ err('name') }}
+    </div>
+    <div class="fields fields-wide-first">
+      <div class="field">
+        <label for="url">URL</label>
+        <input id="url" name="url" class="mono" type="url" value="{{ form.url }}" maxlength="500" placeholder="https://" required>
+        {{ err('url') }}
+      </div>
+      <div class="field">
+        <label for="criticality">Criticità</label>
+        <select id="criticality" name="criticality">
+          {% for value, label in criticality_labels.items() %}
+          <option value="{{ value }}" {% if form.criticality == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        {{ err('criticality') }}
+      </div>
+    </div>
+    <label class="check"><input type="checkbox" name="active" {% if form.active %}checked{% endif %}> Monitoraggio attivo</label>
+    <label class="check"><input type="checkbox" name="domain_check_enabled" {% if form.domain_check_enabled %}checked{% endif %}> Controllo scadenza dominio (disattivare per i sottodomini di enti)</label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Autorizzazione al monitoraggio</legend>
+    <div class="fields">
+      <div class="field">
+        <label for="authorized_by">Autorizzato da</label>
+        <input id="authorized_by" name="authorized_by" value="{{ form.authorized_by }}" maxlength="200">
+        {{ err('authorized_by') }}
+      </div>
+      <div class="field">
+        <label for="authorized_at">Data dell'autorizzazione</label>
+        <input id="authorized_at" name="authorized_at" class="mono" type="date" value="{{ form.authorized_at }}">
+        {{ err('authorized_at') }}
+      </div>
+    </div>
+  </fieldset>
+
+  {% for kind, label in contact_labels.items() %}
+  <fieldset>
+    <legend>{{ label }}</legend>
+    <div class="fields">
+      <div class="field">
+        <label for="{{ kind }}_name">Nome</label>
+        <input id="{{ kind }}_name" name="{{ kind }}_name" value="{{ form.contacts[kind].name }}" maxlength="200">
+      </div>
+      <div class="field">
+        <label for="{{ kind }}_email">Mail</label>
+        <input id="{{ kind }}_email" name="{{ kind }}_email" class="mono" type="email" value="{{ form.contacts[kind].email }}" maxlength="254">
+        {{ err(kind ~ '_email') }}
+      </div>
+      <div class="field">
+        <label for="{{ kind }}_phone">Telefono</label>
+        <input id="{{ kind }}_phone" name="{{ kind }}_phone" class="mono" value="{{ form.contacts[kind].phone }}" maxlength="50">
+      </div>
+    </div>
+  </fieldset>
+  {% endfor %}
+
+  <fieldset>
+    <legend>Note</legend>
+    <div class="field">
+      <label for="notes">Note interne</label>
+      <textarea id="notes" name="notes" rows="3">{{ form.notes }}</textarea>
+    </div>
+  </fieldset>
+
+  <div class="actions">
+    <button type="submit" class="btn">Salva</button>
+    <a href="{{ '/sites/' ~ site.id if site else '/sites' }}">Annulla</a>
+  </div>
+</form>
+{% endblock %}

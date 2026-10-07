@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{% block title %}Web Sentinel{% endblock %} – Web Sentinel</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', path='img/favicon.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', path='css/app.css') }}?v={{ asset_version }}">
+  <script src="{{ url_for('static', path='js/app.js') }}?v={{ asset_version }}" defer></script>
+</head>
+<body>
+  <a class="skip" href="#contenuto">Vai al contenuto</a>
+  <header class="topbar">
+    <a class="brand" href="/"><img src="{{ url_for('static', path='img/shield-light.svg') }}" alt="" width="22" height="25">Web Sentinel</a>
+    {% if user %}
+    <nav class="nav" aria-label="Menu principale">
+      <a href="/sites" {% if request.url.path.startswith('/sites') %}class="active" aria-current="page"{% endif %}>Siti</a>
+      {% if user.role == 'admin' %}
+      <a href="/admin/users" {% if request.url.path.startswith('/admin/users') %}class="active" aria-current="page"{% endif %}>Utenti</a>
+      <a href="/admin/audit" {% if request.url.path.startswith('/admin/audit') %}class="active" aria-current="page"{% endif %}>Audit log</a>
+      {% endif %}
+    </nav>
+    <div class="session">
+      {% if worker %}
+      <span class="worker{% if worker.state != 'ok' %} worker-alerted{% endif %} badge badge-{{ {'ok': 'ok', 'down': 'critical', 'unknown': 'warning'}[worker.state] }}"
+            title="Ultimo segnale: {{ worker.last_beat_at | dt('%d/%m/%Y %H:%M:%S') }}">{{ worker.label }}</span>
+      {% endif %}
+      <span class="who">{{ user.email }} · {{ role_labels[user.role] }}</span>
+      <form method="post" action="/logout">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit" class="btn-link">Esci</button>
+      </form>
+    </div>
+    {% endif %}
+  </header>
+  {% if user and worker and worker.state != 'ok' %}
+  <p class="sysalert sysalert-{{ 'critical' if worker.state == 'down' else 'warning' }}" role="status">
+    <strong>{{ worker.label }}.</strong>
+    <span>I controlli automatici non sono in esecuzione.</span>
+    {% if worker.last_beat_at %}<span>Ultimo segnale: <span class="mono">{{ worker.last_beat_at | dt('%d/%m/%Y %H:%M:%S') }}</span></span>{% endif %}
+  </p>
+  {% endif %}
+  <main class="page" id="contenuto">
+    {% if weak_password %}
+    <p class="flash flash-warning" role="status">Password troppo corta: va bene solo per le prove in locale. Cambiarla da Utenti prima di mettere il tool in rete.</p>
+    {% endif %}
+    {% if flash %}
+    <p class="flash flash-{{ flash.kind }}" role="status">{{ flash.message }}</p>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

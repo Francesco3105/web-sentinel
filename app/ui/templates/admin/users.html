@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Utenti{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Utenti <span class="count mono">{{ users | length }}</span></h1>
+  <a class="btn" href="/admin/users/new">Aggiungi utente</a>
+</div>
+<section class="card card-flush">
+  <div class="table-wrap">
+    <table class="table-stack">
+      <thead><tr><th>Utente</th><th>Nome</th><th>Ruolo</th><th>Stato</th><th>Ultimo accesso</th><th></th></tr></thead>
+      <tbody>
+        {% for item in users %}
+        <tr>
+          <td class="cell-main mono wrap"><span class="row-name">{{ item.email }}</span></td>
+          <td data-label="Nome">{{ item.full_name }}</td>
+          <td data-label="Ruolo">{{ role_labels[item.role] }}</td>
+          <td data-label="Stato">{% if item.active %}Attivo{% else %}<span class="badge badge-off">Disattivato</span>{% endif %}</td>
+          <td data-label="Ultimo accesso" class="mono nowrap">{{ item.last_login_at | dt }}</td>
+          <td class="cell-status"><a href="/admin/users/{{ item.id }}/edit">Modifica</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

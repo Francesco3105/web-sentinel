@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Siti{% endblock %}
+{% block content %}
+{# Most serious first; inside each group the order chosen by the route is kept. #}
+{% set by_severity = ('fail', 'warn', 'pending', 'ok') %}
+<div class="page-head">
+  <div class="summary">
+    <h1>Siti totali: <span class="total mono">{{ sites | length }}</span></h1>
+    {% for status in by_severity if status_counts[status] %}
+    <span class="badge badge-{{ status_labels[status][1] }}">{{ status_labels[status][0] }} <span class="mono">{{ status_counts[status] }}</span></span>
+    {% endfor %}
+  </div>
+  <div class="actions">
+    {% if can_run %}
+    <form method="post" action="/sites/run-checks" data-busy="Controlli in corso…">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="btn btn-secondary" {% if not runnable %}disabled aria-describedby="run-hint"{% endif %}>Esegui tutti i controlli ora</button>
+    </form>
+    {% endif %}
+    {% if user.role == 'admin' %}<a class="btn" href="/sites/new">Aggiungi sito</a>{% endif %}
+  </div>
+</div>
+{% if can_run and not runnable %}
+<p class="muted run-hint" id="run-hint">Controlli non eseguibili: nessun sito attivo con autorizzazione.</p>
+{% endif %}
+<section class="card card-flush">
+  <div class="table-wrap">
+    <table class="table-stack">
+      <thead>
+        <tr>
+          <th>Stato</th>
+          <th>Sito</th>
+          <th>Criticità</th>
+          <th>Monitoraggio</th>
+          <th>Autorizzazione</th>
+          <th>Controlli attivi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for status in by_severity %}
+        {% for site in sites if site.status == status %}
+        <tr class="row-{{ status }}">
+          <td class="cell-status"><span class="badge badge-{{ status_labels[site.status][1] }}">{{ status_labels[site.status][0] }}</span></td>
+          <td class="cell-main">
+            <a class="row-title" href="/sites/{{ site.id }}">{{ site.name }}</a><br>
+            <span class="mono muted wrap">{{ site.url }}</span>
+          </td>
+          <td data-label="Criticità"><span class="level level-{{ site.criticality }}">{{ criticality_labels[site.criticality] }}</span></td>
+          <td data-label="Monitoraggio">
+            {% if site.active %}Attivo
+            {% else %}<span class="badge badge-off">Sospeso</span>{% endif %}
+          </td>
+          <td data-label="Autorizzazione">
+            {% if site.is_authorized %}
+            Registrata
+            <span class="mono muted">{{ site.authorized_at.strftime('%d/%m/%Y') }}</span>
+            {% else %}<span class="badge badge-warning">Mancante</span>{% endif %}
+          </td>
+          <td data-label="Controlli attivi">
+            {% for check in site.checks if check.enabled %}
+            <span class="tag mono">{{ check.type }}</span>
+            {% endfor %}
+          </td>
+        </tr>
+        {% endfor %}
+        {% endfor %}
+        {% if not sites %}
+        <tr><td colspan="6" class="muted">Nessun sito in inventario.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</section>
+<p class="muted note">I controlli partono solo per i siti attivi con autorizzazione registrata (chi, quando).</p>
+{% endblock %}

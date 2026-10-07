@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 144" role="img" aria-label="Web Sentinel">
+  <path d="M64 4 120 24v44c0 36-24 60-56 72C32 128 8 104 8 68V24z" fill="#C2410C" stroke="#9A3412" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M64 15 110 31.500v36.500c0 29.500-19.500 50-46 60.500C37.500 118 18 97.500 18 68V31.500z" fill="none" stroke="#FDBA74" stroke-width="2" stroke-linejoin="round"/>
+  <g fill="#FFFFFF" font-family="'IBM Plex Sans', 'Segoe UI', Arial, sans-serif" font-weight="700" text-anchor="middle">
+    <text x="64" y="62" font-size="24" textLength="56" lengthAdjust="spacingAndGlyphs">WEB</text>
+    <text x="64" y="86" font-size="16" textLength="80" lengthAdjust="spacingAndGlyphs">SENTINEL</text>
+  </g>
+</svg>

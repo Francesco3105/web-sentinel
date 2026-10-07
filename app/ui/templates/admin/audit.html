@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Audit log{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Audit log</h1></div>
+<section class="card card-flush">
+  <div class="table-wrap">
+    <table class="table-stack">
+      <thead><tr><th>Quando</th><th>Chi</th><th>Azione</th><th>Oggetto</th><th>Dettagli</th></tr></thead>
+      <tbody>
+        {% for entry in entries %}
+        <tr>
+          <td class="cell-status mono nowrap">{{ entry.created_at | dt('%d/%m/%Y %H:%M:%S') }}</td>
+          <td data-label="Chi" class="mono wrap">{{ entry.user_email or '–' }}</td>
+          <td class="cell-main"><span class="row-name">{{ action_labels.get(entry.action, entry.action) }}</span></td>
+          <td data-label="Oggetto" class="mono">{% if entry.object_type %}{{ entry.object_type }}{% if entry.object_id %} #{{ entry.object_id }}{% endif %}{% else %}–{% endif %}</td>
+          {# A change is stored as {"da": old, "a": new}: shown in reading order. #}
+          <td data-label="Dettagli" class="mono details">{% for key, value in entry.details.items() %}<span class="detail-line"><span class="muted">{{ key }}:</span> {% if value is mapping and 'da' in value and 'a' in value %}{{ value.da | tojson }} → {{ value.a | tojson }}{% else %}{{ value | tojson }}{% endif %}</span>{% endfor %}</td>
+        </tr>
+        {% endfor %}
+        {% if not entries %}
+        <tr><td colspan="5" class="muted">Nessuna voce.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</section>
+<p class="pager">
+  {% if page > 1 %}<a href="/admin/audit?page={{ page - 1 }}">← Più recenti</a>{% endif %}
+  <span class="mono muted">Pagina {{ page }}</span>
+  {% if has_next %}<a href="/admin/audit?page={{ page + 1 }}">Meno recenti →</a>{% endif %}
+</p>
+{% endblock %}

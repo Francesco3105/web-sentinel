@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}{{ site.name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="title-row">
+      <h1>{{ site.name }}</h1>
+      <span class="badge badge-lg badge-{{ status_labels[site.status][1] }}">{{ status_labels[site.status][0] }}</span>
+    </div>
+    <a class="mono wrap" href="{{ site.url }}" rel="noopener noreferrer" target="_blank">{{ site.url }}</a>
+  </div>
+  <div class="actions">
+    {% if can_run %}
+    <form method="post" action="/sites/{{ site.id }}/run-checks" data-busy="Controlli in corso…">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="btn btn-secondary" {% if not runnable %}disabled aria-describedby="run-hint"{% endif %}>Esegui controlli ora</button>
+    </form>
+    {% endif %}
+    {% if user.role == 'admin' %}<a class="btn" href="/sites/{{ site.id }}/edit">Modifica</a>{% endif %}
+  </div>
+</div>
+{% if can_run and not runnable %}
+<p class="muted run-hint" id="run-hint">Controlli non eseguibili: serve un sito attivo con autorizzazione registrata.</p>
+{% endif %}
+
+<div class="detail">
+  <section class="card card-flush">
+    <h2>Controlli</h2>
+    <div class="table-wrap">
+      <table class="table-stack">
+        <thead><tr><th>Tipo</th><th>Ultimo esito</th><th>Bersaglio</th><th>Intervallo</th><th>Attesa massima</th><th>Controllo</th></tr></thead>
+        <tbody>
+          {% for check in site.checks %}
+          {% set result = last_results[check.id] %}
+          <tr {% if result and result.status == 'fail' %}class="row-fail"{% endif %}>
+            <td class="cell-main"><span class="row-name">{{ check_labels[check.type] }}</span></td>
+            <td data-label="Ultimo esito" class="result">
+              {% if result %}
+              <span class="badge badge-{{ status_labels[result.status][1] }}">{{ status_labels[result.status][0] }}</span>
+              <span class="mono muted nowrap">{{ result.created_at | dt('%d/%m %H:%M:%S') }}</span><br>
+              <span class="result-msg">{{ result.message }}</span>
+              {% else %}<span class="muted">Mai eseguito</span>{% endif %}
+            </td>
+            <td data-label="Bersaglio" class="mono wrap">{{ check.target }}</td>
+            <td data-label="Intervallo" class="mono nowrap">{{ check.interval_seconds | interval }}</td>
+            <td data-label="Attesa massima" class="mono nowrap">{{ check.timeout_seconds | interval }}</td>
+            <td data-label="Controllo">{% if check.enabled %}Attivo{% else %}<span class="badge badge-off">Disattivo</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Scheda</h2>
+    <dl class="facts">
+      <dt>Criticità</dt>
+      <dd><span class="level level-{{ site.criticality }}">{{ criticality_labels[site.criticality] }}</span></dd>
+      <dt>Monitoraggio</dt>
+      <dd>{% if site.active %}Attivo{% else %}<span class="badge badge-off">Sospeso</span>{% endif %}</dd>
+      <dt>Autorizzazione</dt>
+      <dd>
+        {% if site.is_authorized %}
+        Registrata<br>{{ site.authorized_by }}, <span class="mono">{{ site.authorized_at.strftime('%d/%m/%Y') }}</span>
+        {% else %}
+        <span class="badge badge-warning">Mancante</span><br>I controlli non partono finché non viene registrata.
+        {% endif %}
+      </dd>
+      {% for contact in site.contacts %}
+      <dt>{{ contact_labels[contact.kind] }}</dt>
+      <dd class="contact">
+        {% if contact.name or contact.email or contact.phone %}
+        {% if contact.name %}<span>{{ contact.name }}</span>{% endif %}
+        {% if contact.email %}<span class="mono wrap">{{ contact.email }}</span>{% endif %}
+        {% if contact.phone %}<span class="mono">{{ contact.phone }}</span>{% endif %}
+        {% else %}<span class="muted">Da compilare</span>{% endif %}
+      </dd>
+      {% endfor %}
+      {% if site.notes %}<dt>Note</dt><dd>{{ site.notes }}</dd>{% endif %}
+    </dl>
+  </section>
+</div>
+
+{% if user.role == 'admin' %}
+<section class="card danger">
+  <div>
+    <h2>Eliminazione</h2>
+    <p>Elimina il sito e tutto il suo storico (controlli, incidenti, eventi). Per interrompere solo il monitoraggio basta sospenderlo dalla modifica.</p>
+  </div>
+  <form method="post" action="/sites/{{ site.id }}/delete" data-confirm="Eliminare definitivamente «{{ site.name }}» e tutto il suo storico?">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button type="submit" class="btn btn-danger">Elimina sito</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

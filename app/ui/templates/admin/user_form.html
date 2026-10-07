@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Modifica utente' if target else 'Nuovo utente' }}{% endblock %}
+{% macro err(name) %}{% if form.errors.get(name) %}<p class="field-error" role="alert">{{ form.errors[name] }}</p>{% endif %}{% endmacro %}
+{% block content %}
+<div class="page-head"><h1>{{ 'Modifica ' ~ target.email if target else 'Nuovo utente' }}</h1></div>
+<form class="card form form-narrow" method="post" action="{{ '/admin/users/' ~ target.id ~ '/edit' if target else '/admin/users' }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <fieldset>
+    <legend>Utente</legend>
+    <div class="field">
+      <label for="email">Utente (mail o nome utente)</label>
+      <input id="email" name="email" class="mono" type="text" value="{{ form.email }}" maxlength="254" autocapitalize="none" required>
+      {{ err('email') }}
+    </div>
+    <div class="fields fields-wide-first">
+      <div class="field">
+        <label for="full_name">Nome e cognome</label>
+        <input id="full_name" name="full_name" value="{{ form.full_name }}" maxlength="200">
+      </div>
+      <div class="field">
+        <label for="role">Ruolo</label>
+        <select id="role" name="role">
+          {% for value, label in role_labels.items() %}
+          <option value="{{ value }}" {% if form.role == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        {{ err('role') }}
+      </div>
+    </div>
+    <label class="check"><input type="checkbox" name="active" {% if form.active %}checked{% endif %}> Utente attivo</label>
+    <div class="field">
+      <label for="password">{{ 'Nuova password (vuoto per non cambiarla)' if target else 'Password' }}</label>
+      <input id="password" name="password" type="password" autocomplete="new-password" {% if not target %}required{% endif %}>
+      {{ err('password') }}
+    </div>
+  </fieldset>
+  <div class="actions">
+    <button type="submit" class="btn">Salva</button>
+    <a href="/admin/users">Annulla</a>
+  </div>
+</form>
+{% endblock %}
