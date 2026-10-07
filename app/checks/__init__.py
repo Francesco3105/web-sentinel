@@ -35,7 +35,7 @@ def _target(site: Site, check_type: CheckType) -> str:
         return site.url
     host = hostname_of(site.url)
     if check_type == CheckType.DOMAIN:
-        # Placeholder until phase 2 resolves the registrable domain properly.
+        # The check itself finds the registrable domain (see app.checks.domain).
         return host.removeprefix("www.")
     return host
 

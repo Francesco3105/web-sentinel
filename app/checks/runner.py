@@ -10,6 +10,7 @@ from typing import Any
 
 import httpx
 
+from app.checks import domain
 from app.db.models import CheckStatus, CheckType
 
 USER_AGENT = "WebSentinel/1.0 (monitoraggio interno)"
@@ -104,12 +105,18 @@ async def run_tls(target: str, timeout: int, thresholds: dict[str, Any]) -> Outc
     return Outcome(CheckStatus.OK, days, f"Certificato valido, scade tra {days} giorni")
 
 
+async def run_domain(target: str, timeout: int, thresholds: dict[str, Any]) -> Outcome:
+    status, value, message = await domain.run_domain(target, timeout, thresholds)
+    return Outcome(status, value, message)
+
+
 Runner = Callable[[str, int, dict[str, Any]], Awaitable[Outcome]]
 
 RUNNERS: dict[str, Runner] = {
     CheckType.HTTP: run_http,
     CheckType.DNS: run_dns,
     CheckType.TLS: run_tls,
+    CheckType.DOMAIN: run_domain,
 }
 
 

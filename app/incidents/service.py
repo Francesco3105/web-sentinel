@@ -19,6 +19,8 @@ from app.db.models import (
 )
 
 DEFAULT_TLS_ALERT_DAYS = 7
+DEFAULT_DOMAIN_WARN_DAYS = 30
+DEFAULT_DOMAIN_CRITICAL_DAYS = 7
 
 RECOMMENDED_ACTIONS = {
     (CheckType.HTTP, Severity.CRITICAL): (
@@ -36,7 +38,16 @@ RECOMMENDED_ACTIONS = {
         "Rinnovare il certificato prima della scadenza e verificare che il rinnovo automatico "
         "sia attivo."
     ),
+    (CheckType.DOMAIN, Severity.CRITICAL): (
+        "Rinnovare subito il dominio presso il registrar: alla scadenza sito e posta smettono "
+        "di funzionare."
+    ),
+    (CheckType.DOMAIN, Severity.WARNING): (
+        "Rinnovare il dominio presso il registrar e verificare che il rinnovo automatico sia "
+        "attivo."
+    ),
 }
+STANDALONE_TYPES = (CheckType.DOMAIN,)
 DEFAULT_ACTION = "Verificare il controllo dalla scheda del sito e ripeterlo a mano."
 
 
@@ -45,13 +56,23 @@ def problem_severity(check: Check, outcome: Outcome, failure_threshold: int) -> 
 
     "pending" means a failure not yet confirmed: an open incident is left as it is.
     """
+    thresholds = check.thresholds or {}
+    if check.type == CheckType.DOMAIN:
+        # An expiry date is a fact, not a transient failure: no need to wait for three results.
+        if outcome.value is None:
+            return None
+        if outcome.value < thresholds.get("critical_days", DEFAULT_DOMAIN_CRITICAL_DAYS):
+            return Severity.CRITICAL
+        if outcome.value < thresholds.get("warn_days", DEFAULT_DOMAIN_WARN_DAYS):
+            return Severity.WARNING
+        return None
     if outcome.status == CheckStatus.FAIL:
         if check.consecutive_failures >= failure_threshold:
             return Severity.CRITICAL
         return "pending"
     # A slow answer is shown in the interface but never opens an incident.
     if check.type == CheckType.TLS and outcome.value is not None:
-        alert_days = (check.thresholds or {}).get("alert_days", DEFAULT_TLS_ALERT_DAYS)
+        alert_days = thresholds.get("alert_days", DEFAULT_TLS_ALERT_DAYS)
         if outcome.value < alert_days:
             return Severity.WARNING
     return None
@@ -66,17 +87,17 @@ def open_incident_for(db: Session, check: Check) -> Incident | None:
     )
 
 
-def open_critical_for_site(db: Session, site_id: int) -> Incident | None:
-    return db.scalar(
-        select(Incident)
-        .where(
-            Incident.site_id == site_id,
-            Incident.severity == Severity.CRITICAL,
-            Incident.status != IncidentStatus.CLOSED,
-        )
-        .order_by(Incident.id)
-        .limit(1)
+def open_critical_for_site(db: Session, check: Check) -> Incident | None:
+    """The open critical incident shared by the failing checks of the site, if any."""
+    standalone = [other.id for other in check.site.checks if other.type in STANDALONE_TYPES]
+    query = select(Incident).where(
+        Incident.site_id == check.site_id,
+        Incident.severity == Severity.CRITICAL,
+        Incident.status != IncidentStatus.CLOSED,
     )
+    if standalone:
+        query = query.where(Incident.check_id.not_in(standalone))
+    return db.scalar(query.order_by(Incident.id).limit(1))
 
 
 def _label(check: Check) -> str:
@@ -96,10 +117,12 @@ def _close(incident: Incident, message: str, now: datetime) -> None:
 def evaluate(db: Session, check: Check, outcome: Outcome, now: datetime) -> Incident | None:
     """Apply one check result. The caller commits. Returns the incident it touched, if any.
 
-    A site has at most one open critical incident: when several of its checks fail (a site
-    that is down fails http, dns and tls together) the later ones are added to it as events,
-    so that one problem produces one stream of mails.
+    A site has at most one open critical incident for its failing checks: when several fail
+    (a site that is down fails http, dns and tls together) the later ones are added to it as
+    events, so that one problem produces one stream of mails. A domain about to expire is a
+    different problem and always has its own incident.
     """
+    standalone = check.type in STANDALONE_TYPES
     threshold = get_settings().incident_failure_threshold
     severity = problem_severity(check, outcome, threshold)
     own = open_incident_for(db, check)
@@ -107,19 +130,24 @@ def evaluate(db: Session, check: Check, outcome: Outcome, now: datetime) -> Inci
         return own
 
     if severity is None:
-        if own is not None and own.severity != Severity.CRITICAL:
+        if own is not None and (standalone or own.severity != Severity.CRITICAL):
             _close(own, outcome.message, now)
-        critical = open_critical_for_site(db, check.site_id)
+        if standalone:
+            return own
+        critical = open_critical_for_site(db, check)
         still_failing = any(
-            other.enabled and other.consecutive_failures >= threshold for other in check.site.checks
+            other.enabled
+            and other.type not in STANDALONE_TYPES
+            and other.consecutive_failures >= threshold
+            for other in check.site.checks
         )
         if critical is not None and not still_failing:
             _close(critical, f"{_label(check)}: {outcome.message}", now)
         return critical or own
 
     action = RECOMMENDED_ACTIONS.get((CheckType(check.type), Severity(severity)), DEFAULT_ACTION)
-    if severity == Severity.CRITICAL:
-        critical = open_critical_for_site(db, check.site_id)
+    if severity == Severity.CRITICAL and not standalone:
+        critical = open_critical_for_site(db, check)
         if critical is not None and critical.check_id != check.id:
             prefix = f"{_label(check)}:"
             known = any(

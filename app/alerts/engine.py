@@ -20,6 +20,7 @@ from app.db.models import (
     AlertRule,
     Check,
     CheckResult,
+    CheckType,
     Incident,
     IncidentStatus,
     Site,
@@ -36,6 +37,9 @@ RETRY_AFTER = timedelta(minutes=5)
 # Recoveries of incidents closed longer ago are not worth a mail any more.
 RECOVERY_WINDOW = timedelta(hours=24)
 RECOVERY_SCAN_LIMIT = 200
+# An expiry does not change by the hour: its reminders come once a day at most.
+SLOW_REMINDER_MINUTES = 24 * 60
+SLOW_CHECK_TYPES = (CheckType.DOMAIN,)
 SEVERITY_TAGS = {"info": "INFO", "warning": "WARNING", "critical": "CRITICAL"}
 SEVERITY_LABELS = {"info": "Informazione", "warning": "Attenzione", "critical": "Critico"}
 
@@ -192,6 +196,15 @@ def _log(
     )
 
 
+def _reminder_minutes(db: Session, incident: Incident, rule: AlertRule) -> int | None:
+    if not rule.reminder_minutes:
+        return None
+    check = db.get(Check, incident.check_id) if incident.check_id else None
+    if check is not None and check.type in SLOW_CHECK_TYPES:
+        return max(rule.reminder_minutes, SLOW_REMINDER_MINUTES)
+    return rule.reminder_minutes
+
+
 def _same_problem_recently(db: Session, incident: Incident, minutes: int, now: datetime) -> bool:
     """True when the same check already produced a mail of this severity within the window."""
     if incident.check_id is None:
@@ -247,13 +260,16 @@ def process(
                 db.add(_log(incident, OPENED, "-", subject, DEDUPLICATED, now))
                 continue
             sent += _deliver(db, OPENED, incident, now, settings, sender)
-        elif rule.reminder_minutes and _last(announced, SENT):
+        elif _last(announced, SENT):
+            every = _reminder_minutes(db, incident, rule)
             last_sent = _last(logs, SENT)
-            due = last_sent is not None and now - _aware(last_sent.sent_at) >= timedelta(
-                minutes=rule.reminder_minutes
-            )
             reminders = [log for log in logs if log.kind == REMINDER]
-            if due and not _recently_failed(reminders, now):
+            if (
+                every
+                and last_sent is not None
+                and now - _aware(last_sent.sent_at) >= timedelta(minutes=every)
+                and not _recently_failed(reminders, now)
+            ):
                 sent += _deliver(db, REMINDER, incident, now, settings, sender)
 
     # Filtered here rather than in SQL: SQLite stores these timestamps without a time zone.
