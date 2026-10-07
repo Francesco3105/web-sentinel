@@ -10,7 +10,16 @@ from app.auth import audit
 from app.auth.deps import AdminDep, DbDep, OperatorDep, UserDep, csrf_protect
 from app.checks import sync_default_checks
 from app.config import get_settings
-from app.db.models import CheckResult, ContactKind, Criticality, Role, Site, SiteContact
+from app.db.models import (
+    CheckResult,
+    ContactKind,
+    Criticality,
+    Incident,
+    IncidentStatus,
+    Role,
+    Site,
+    SiteContact,
+)
 from app.ui.forms import ContactData, SiteForm
 from app.ui.rendering import flash, render
 from app.worker.scheduler import run_and_record, runnable_checks
@@ -172,9 +181,15 @@ def site_detail(site_id: int, request: Request, db: DbDep, user: UserDep) -> Res
         )
         for check in site.checks
     }
+    open_incidents = db.scalars(
+        select(Incident)
+        .where(Incident.site_id == site.id, Incident.status != IncidentStatus.CLOSED)
+        .order_by(Incident.id.desc())
+    ).all()
     context = {
         "site": site,
         "last_results": last_results,
+        "open_incidents": open_incidents,
         "can_run": user.role in CAN_RUN_CHECKS,
         "runnable": bool(runnable_checks(site)),
     }

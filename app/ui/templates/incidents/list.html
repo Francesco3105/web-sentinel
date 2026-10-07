@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Incidenti{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Incidenti <span class="count mono">{{ incidents | length }}</span></h1>
+  <nav class="filters" aria-label="Filtro incidenti">
+    {% for value, label in filters.items() %}
+    <a href="/incidents?stato={{ value }}" {% if value == current %}class="active" aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+</div>
+<section class="card card-flush">
+  <div class="table-wrap">
+    <table class="table-stack">
+      <thead><tr><th>Gravità</th><th>Incidente</th><th>Sito</th><th>Stato</th><th>Aperto</th><th>Chiuso</th></tr></thead>
+      <tbody>
+        {% for incident in incidents %}
+        {% set site = sites.get(incident.site_id) %}
+        <tr {% if incident.status != 'closed' and incident.severity == 'critical' %}class="row-fail"{% endif %}>
+          <td class="cell-status"><span class="badge badge-{{ severity_labels[incident.severity][1] }}">{{ severity_labels[incident.severity][0] }}</span></td>
+          <td class="cell-main">
+            <a class="row-title" href="/incidents/{{ incident.id }}">{{ incident.title }}</a><br>
+            <span class="mono muted">#{{ incident.id }}</span>
+          </td>
+          <td data-label="Sito">{% if site %}<a href="/sites/{{ site.id }}">{{ site.name }}</a>{% else %}–{% endif %}</td>
+          <td data-label="Stato">{% if incident.status == 'closed' %}<span class="badge badge-off">Chiuso</span>{% else %}{{ incident_status_labels[incident.status] }}{% endif %}</td>
+          <td data-label="Aperto" class="mono nowrap">{{ incident.opened_at | dt }}</td>
+          <td data-label="Chiuso" class="mono nowrap">{{ incident.closed_at | dt }}</td>
+        </tr>
+        {% endfor %}
+        {% if not incidents %}
+        <tr><td colspan="6" class="muted">{{ "Nessun incidente aperto." if current == "aperti" else "Nessun incidente." }}</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</section>
+<p class="muted note">Un incidente si apre dopo tre fallimenti consecutivi dello stesso controllo, oppure quando un certificato scade entro sette giorni, e si chiude da solo quando il controllo torna regolare.</p>
+{% endblock %}

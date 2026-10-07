@@ -138,12 +138,13 @@ def test_due_checks_respect_intervals_and_results_are_recorded(
     assert all(check.consecutive_failures == 1 for check in site.checks)
 
     assert due_checks(db, now + timedelta(seconds=30)) == []
+    # After a failure every check is repeated sooner than its normal interval.
     later = due_checks(db, now + timedelta(minutes=6))
-    assert [check.type for check in later] == ["http"]
+    assert sorted(check.type for check in later) == ["dns", "http", "tls"]
 
     _stub_runners(monkeypatch, CheckStatus.OK)
     asyncio.run(run_and_record(db, later))
-    assert later[0].consecutive_failures == 0
+    assert all(check.consecutive_failures == 0 for check in later)
 
 
 def test_run_all_checks_now_skips_unauthorized_sites(

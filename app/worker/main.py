@@ -9,6 +9,7 @@ from types import FrameType
 
 from sqlalchemy.orm import Session
 
+from app.alerts import engine as alerts
 from app.config import get_settings
 from app.db.models import WorkerHeartbeat
 from app.db.session import get_sessionmaker
@@ -35,6 +36,9 @@ def tick(started_at: datetime, max_concurrency: int) -> None:
         count = asyncio.run(run_and_record(db, checks, max_concurrency))
         if count:
             logger.info("ran %d checks", count)
+        sent = alerts.process(db)
+        if sent:
+            logger.info("sent %d alert mails", sent)
 
 
 def main() -> None:

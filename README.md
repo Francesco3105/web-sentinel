@@ -12,12 +12,12 @@ Web Sentinel riduce i tempi di rilevamento dei problemi; non garantisce la sicur
 accesso con ruoli, audit log, layout dell'interfaccia.
 
 **Fase 2 – in corso**: controlli `http`, `dns` e `tls` eseguiti dal worker sui siti attivi e
-autorizzati, esiti nella scheda sito, colonna Stato, pulsante "Esegui controlli ora". Mancano il
-controllo `domain`, gli incidenti e le mail di alert.
+autorizzati, esiti nella scheda sito, incidenti aperti e chiusi in automatico, mail di alert con
+promemoria e recovery, schermata Incidenti. Mancano il controllo `domain` e la Panoramica.
 
 ## Avvio in locale, senza Docker
 
-È il modo usato oggi per lo sviluppo: Python 3.12 o successivo e un file SQLite in `.local/`.
+Per i PC dove Docker non è disponibile: Python 3.12 o successivo e un file SQLite in `.local/`.
 
 ```
 python -m venv .venv
@@ -35,7 +35,6 @@ Lo script applica le migrazioni, carica i dati iniziali, avvia il worker e apre 
 
 ## Avvio con Docker
 
-Non ancora verificato: sul PC di sviluppo Docker non è disponibile. Va provato sull'ambiente finale.
 Servono Docker Engine con Compose e git.
 
 1. Copiare `.env.example` in `.env` e compilare almeno `POSTGRES_PASSWORD`, `SECRET_KEY`,
@@ -55,6 +54,36 @@ Servono Docker Engine con Compose e git.
 
 4. Aprire <http://localhost:8000> ed entrare con `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
    Le mail di sviluppo finiscono in Mailpit: <http://localhost:8025>. Nessuna mail reale viene spedita.
+
+## Incidenti e mail di alert
+
+- Un controllo che fallisce viene ripetuto dopo un minuto; al terzo fallimento consecutivo si apre
+  un incidente critico. Se sullo stesso sito falliscono più controlli insieme, finiscono tutti
+  nello stesso incidente: un sito irraggiungibile produce una sola serie di mail.
+- Un certificato che scade entro 7 giorni apre un incidente di attenzione. Una risposta lenta
+  compare nell'interfaccia ma non apre incidenti e non genera mail.
+- Critico: una mail subito, a qualsiasi ora, un promemoria ogni 30 minuti e una mail di rientro
+  con la durata. Attenzione: mail solo tra le 08:00 e le 20:00, non ripetuta per lo stesso
+  problema entro 6 ore, più la mail di rientro.
+- Ogni invio, riuscito o no, è elencato nella scheda dell'incidente. Un invio fallito viene
+  ritentato dopo 5 minuti.
+
+Fuori produzione (`ENVIRONMENT` diverso da `production`) le mail restano in Mailpit. Per provare
+un invio reale, ad esempio con Resend, impostare in `.env`:
+
+```
+SMTP_HOST=smtp.resend.com
+SMTP_PORT=587
+SMTP_USER=resend
+SMTP_PASSWORD=<chiave API>
+SMTP_FROM=Web Sentinel <mittente@dominio-verificato>
+MAIL_REAL_DELIVERY=true
+MAIL_TEST_RECIPIENT=<indirizzo di prova>
+```
+
+Con `MAIL_REAL_DELIVERY=true` fuori produzione tutte le mail vanno soltanto a
+`MAIL_TEST_RECIPIENT`, mai ai destinatari configurati. In produzione valgono i parametri `SMTP_*`
+e i destinatari veri. Dopo una modifica a `.env` ricreare i servizi con `docker compose ... up -d`.
 
 ## Comandi
 

@@ -1,0 +1,42 @@
+{% if kind == 'recovery' %}
+RISOLTO: {{ site.name }}
+{% elif kind == 'reminder' %}
+PROMEMORIA - {{ severity_label | upper }}: {{ site.name }}
+{% else %}
+{{ severity_label | upper }}: {{ site.name }}
+{% endif %}
+{{ incident.title }}
+
+Incidente:       #{{ incident.id }}
+Sito:            {{ site.name }} ({{ site.url }})
+Rilevato:        {{ opened_at }}
+{% if kind == 'recovery' %}
+Risolto:         {{ closed_at }}
+Durata:          {{ duration }}
+{% else %}
+Aperto da:       {{ duration }}
+{% endif %}
+{% if last_message %}
+Ultimo esito:    {{ last_message }} ({{ last_checked_at }})
+{% endif %}
+{% if kind != 'recovery' and consecutive_failures %}
+Fallimenti consecutivi: {{ consecutive_failures }}
+{% endif %}
+{% if kind != 'recovery' and incident.recommended_action %}
+
+Azione consigliata:
+{{ incident.recommended_action }}
+{% endif %}
+{% if events %}
+
+Eventi correlati:
+{% for when, message in events %}
+- {{ when }}  {{ message }}
+{% endfor %}
+{% endif %}
+
+Incidente: {{ incident_url }}
+Sito:      {{ site_url }}
+
+--
+Web Sentinel riduce i tempi di rilevamento: non sostituisce la verifica diretta del sito.

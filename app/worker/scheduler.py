@@ -7,7 +7,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.checks.runner import RUNNERS, Outcome, execute
+from app.config import get_settings
 from app.db.models import Check, CheckResult, CheckStatus, Site
+from app.incidents.service import evaluate
 
 
 def _aware(value: datetime) -> datetime:
@@ -21,12 +23,20 @@ def runnable_checks(site: Site) -> list[Check]:
     return [check for check in site.checks if check.enabled and check.type in RUNNERS]
 
 
+def _interval(check: Check) -> int:
+    """Seconds to wait before the next run: shorter while a failure is still unconfirmed."""
+    settings = get_settings()
+    if 0 < check.consecutive_failures < settings.incident_failure_threshold:
+        return min(check.interval_seconds, settings.failure_retry_seconds)
+    return check.interval_seconds
+
+
 def due_checks(db: Session, now: datetime) -> list[Check]:
     due = []
     for site in db.scalars(select(Site).where(Site.active)):
         for check in runnable_checks(site):
             last = check.last_run_at
-            if last is None or _aware(last) + timedelta(seconds=check.interval_seconds) <= now:
+            if last is None or _aware(last) + timedelta(seconds=_interval(check)) <= now:
                 due.append(check)
     return due
 
@@ -44,7 +54,7 @@ async def _run_all(checks: list[Check], max_concurrency: int) -> list[Outcome]:
 
 
 async def run_and_record(db: Session, checks: list[Check], max_concurrency: int = 10) -> int:
-    """Run the given checks concurrently and store one result per check."""
+    """Run the given checks concurrently, store the results and update the incidents."""
     if not checks:
         return 0
     outcomes = await _run_all(checks, max_concurrency)
@@ -64,5 +74,6 @@ async def run_and_record(db: Session, checks: list[Check], max_concurrency: int 
         check.last_run_at = now
         failed = outcome.status == CheckStatus.FAIL
         check.consecutive_failures = check.consecutive_failures + 1 if failed else 0
+        evaluate(db, check, outcome, now)
     db.commit()
     return len(checks)

@@ -13,9 +13,9 @@ services:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       ENVIRONMENT: development
       SESSION_COOKIE_SECURE: "false"
-      SMTP_HOST: mailpit
-      SMTP_PORT: "1025"
-      SMTP_TLS: "false"
+      # Mail stays in Mailpit unless MAIL_REAL_DELIVERY=true is set in .env.
+      MAIL_SANDBOX_HOST: mailpit
+      MAIL_SANDBOX_PORT: "1025"
     command: >
       sh -c "alembic upgrade head &&
              uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
@@ -25,9 +25,9 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       ENVIRONMENT: development
-      SMTP_HOST: mailpit
-      SMTP_PORT: "1025"
-      SMTP_TLS: "false"
+      # Mail stays in Mailpit unless MAIL_REAL_DELIVERY=true is set in .env.
+      MAIL_SANDBOX_HOST: mailpit
+      MAIL_SANDBOX_PORT: "1025"
 
   mailpit:
     image: axllent/mailpit:latest

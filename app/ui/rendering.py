@@ -11,6 +11,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.auth.deps import csrf_token
+from app.checks import CHECK_LABELS
 from app.config import get_settings
 from app.db.models import User, WorkerHeartbeat
 
@@ -19,15 +20,6 @@ templates = Jinja2Templates(directory=UI_DIR / "templates")
 
 CRITICALITY_LABELS = {"high": "Alta", "medium": "Media", "low": "Bassa"}
 ROLE_LABELS = {"admin": "Amministratore", "operator": "Operatore", "viewer": "Sola lettura"}
-CHECK_LABELS = {
-    "http": "HTTP/HTTPS",
-    "dns": "DNS",
-    "tls": "Certificato TLS",
-    "domain": "Scadenza dominio",
-    "endpoint": "Endpoint",
-    "content": "Contenuto",
-    "flow": "Flusso",
-}
 # status -> (label, badge style)
 STATUS_LABELS = {
     "ok": ("OK", "ok"),
@@ -35,6 +27,22 @@ STATUS_LABELS = {
     "fail": ("Errore", "critical"),
     "pending": ("In attesa", "muted"),
 }
+# severity -> (label, badge style)
+SEVERITY_LABELS = {
+    "info": ("Informazione", "info"),
+    "warning": ("Attenzione", "warning"),
+    "critical": ("Critico", "critical"),
+    "security": ("Sicurezza", "security"),
+    "malware": ("Malware", "malware"),
+}
+INCIDENT_STATUS_LABELS = {"open": "Aperto", "acknowledged": "Preso in carico", "closed": "Chiuso"}
+EVENT_LABELS = {
+    "opened": "Aperto",
+    "recovered": "Rientrato",
+    "severity_changed": "Cambio di gravità",
+    "correlated": "Altro controllo fallito",
+}
+MAIL_KIND_LABELS = {"opened": "Apertura", "reminder": "Promemoria", "recovery": "Rientro"}
 CONTACT_LABELS = {"technical": "Referente tecnico", "business": "Referente business"}
 ACTION_LABELS = {
     "login": "Accesso",
@@ -75,6 +83,10 @@ templates.env.globals.update(
     role_labels=ROLE_LABELS,
     check_labels=CHECK_LABELS,
     status_labels=STATUS_LABELS,
+    severity_labels=SEVERITY_LABELS,
+    incident_status_labels=INCIDENT_STATUS_LABELS,
+    event_labels=EVENT_LABELS,
+    mail_kind_labels=MAIL_KIND_LABELS,
     contact_labels=CONTACT_LABELS,
     action_labels=ACTION_LABELS,
 )

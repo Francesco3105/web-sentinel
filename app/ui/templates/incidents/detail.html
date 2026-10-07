@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Incidente #{{ incident.id }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="title-row">
+      <h1>{{ incident.title }}</h1>
+      <span class="badge badge-lg badge-{{ severity_labels[incident.severity][1] }}">{{ severity_labels[incident.severity][0] }}</span>
+    </div>
+    <span class="mono muted">Incidente #{{ incident.id }}</span>
+  </div>
+  <div class="actions"><a href="/incidents">Tutti gli incidenti</a></div>
+</div>
+
+<div class="detail">
+  <div>
+    <section class="card card-flush block">
+      <h2>Cronologia</h2>
+      <div class="table-wrap">
+        <table class="table-stack">
+          <thead><tr><th>Quando</th><th>Evento</th><th>Dettaglio</th></tr></thead>
+          <tbody>
+            {% for event in incident.events %}
+            <tr>
+              <td class="cell-status mono nowrap">{{ event.created_at | dt('%d/%m/%Y %H:%M:%S') }}</td>
+              <td class="cell-main"><span class="row-name">{{ event_labels.get(event.kind, event.kind) }}</span></td>
+              <td data-label="Dettaglio">{{ event.message }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card card-flush">
+      <h2>Mail inviate</h2>
+      <div class="table-wrap">
+        <table class="table-stack">
+          <thead><tr><th>Quando</th><th>Tipo</th><th>Destinatario</th><th>Esito</th></tr></thead>
+          <tbody>
+            {% for mail in mails %}
+            <tr>
+              <td class="cell-status mono nowrap">{{ mail.sent_at | dt('%d/%m/%Y %H:%M:%S') }}</td>
+              <td class="cell-main"><span class="row-name">{{ mail_kind_labels.get(mail.kind, mail.kind) }}</span></td>
+              <td data-label="Destinatario" class="mono wrap">{{ mail.recipient }}</td>
+              <td data-label="Esito">
+                {% if mail.status == 'sent' %}Inviata
+                {% elif mail.status == 'failed' %}<span class="badge badge-critical">Non inviata</span> <span class="muted">{{ mail.error or '' }}</span>
+                {% else %}<span class="badge badge-off">Non ripetuta</span> <span class="muted">stesso problema già segnalato</span>{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+            {% if not mails %}
+            <tr><td colspan="4" class="muted">Nessuna mail per questo incidente.</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>Scheda</h2>
+    <dl class="facts">
+      <dt>Stato</dt>
+      <dd>{% if incident.status == 'closed' %}<span class="badge badge-off">Chiuso</span>{% else %}{{ incident_status_labels[incident.status] }}{% endif %}</dd>
+      <dt>Sito</dt>
+      <dd>{% if site %}<a href="/sites/{{ site.id }}">{{ site.name }}</a>{% else %}–{% endif %}</dd>
+      <dt>Aperto</dt>
+      <dd class="mono">{{ incident.opened_at | dt }}</dd>
+      <dt>Chiuso</dt>
+      <dd class="mono">{{ incident.closed_at | dt }}</dd>
+      {% if incident.recommended_action %}
+      <dt>Azione consigliata</dt>
+      <dd>{{ incident.recommended_action }}</dd>
+      {% endif %}
+    </dl>
+  </section>
+</div>
+{% endblock %}

@@ -1,16 +1,27 @@
-"""Check definitions. Check execution is implemented in phase 2."""
+"""Check definitions: labels, defaults and the checks every site gets."""
 
 from typing import Any
 from urllib.parse import urlsplit
 
 from app.db.models import Check, CheckType, Site
 
+CHECK_LABELS = {
+    "http": "HTTP/HTTPS",
+    "dns": "DNS",
+    "tls": "Certificato TLS",
+    "domain": "Scadenza dominio",
+    "endpoint": "Endpoint",
+    "content": "Contenuto",
+    "flow": "Flusso",
+}
+
 # type -> (interval seconds, timeout seconds, thresholds)
 DEFAULTS: dict[CheckType, tuple[int, int, dict[str, Any]]] = {
     # Some managed sites answer very slowly: wait up to 2 minutes before calling it a failure.
     CheckType.HTTP: (300, 120, {"warn_ms": 30000}),
     CheckType.DNS: (600, 120, {"expected": []}),
-    CheckType.TLS: (6 * 3600, 120, {"warn_days": 30}),
+    # Shown as a warning under warn_days; an alert is sent under alert_days.
+    CheckType.TLS: (6 * 3600, 120, {"warn_days": 30, "alert_days": 7}),
     CheckType.DOMAIN: (24 * 3600, 120, {"warn_days": 30, "critical_days": 7}),
 }
 

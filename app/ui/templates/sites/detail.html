@@ -23,6 +23,21 @@
 <p class="muted run-hint" id="run-hint">Controlli non eseguibili: serve un sito attivo con autorizzazione registrata.</p>
 {% endif %}
 
+{% if open_incidents %}
+<section class="card card-flush block">
+  <h2>Incidenti aperti</h2>
+  <ul class="rows">
+    {% for incident in open_incidents %}
+    <li>
+      <span class="badge badge-{{ severity_labels[incident.severity][1] }}">{{ severity_labels[incident.severity][0] }}</span>
+      <a class="row-title" href="/incidents/{{ incident.id }}">{{ incident.title }}</a>
+      <span class="mono muted nowrap">dal {{ incident.opened_at | dt }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
 <div class="detail">
   <section class="card card-flush">
     <h2>Controlli</h2>

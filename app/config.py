@@ -30,6 +30,18 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     smtp_tls: bool = True
     smtp_from: str = ""
+    # Outside production mail goes to a local catcher (Mailpit) unless real delivery is asked
+    # for; even then every alert goes to the test recipient only.
+    mail_real_delivery: bool = False
+    mail_test_recipient: str = ""
+    mail_sandbox_host: str = "localhost"
+    mail_sandbox_port: int = 1025
+    # Used for the links in the alert mails.
+    app_base_url: str = "http://localhost:8000"
+
+    incident_failure_threshold: int = 3
+    # A failed check is repeated sooner, so that an incident is confirmed in minutes.
+    failure_retry_seconds: int = 60
 
     worker_tick_seconds: int = 10
     worker_max_concurrency: int = 10

@@ -272,6 +272,13 @@ p { margin: 0 0 10px; }
   .detail { grid-template-columns: minmax(0, 1fr) 340px; align-items: start; }
 }
 .row-name { font-weight: 600; white-space: nowrap; }
+.block { margin-bottom: 12px; }
+.rows { list-style: none; margin: 0; padding: 4px 0 6px; }
+.rows li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 6px 14px; }
+.rows li + li { border-top: 1px solid var(--border); }
+.filters { display: flex; gap: 2px; padding: 2px; border: 1px solid var(--border-strong); border-radius: var(--r-control); background: var(--card); }
+.filters a { padding: 3px 12px; border-radius: 4px; color: var(--text); font-weight: 500; text-decoration: none; }
+.filters a.active { background: var(--primary-dark); color: #fff; }
 td.result { min-width: 250px; }
 .result-msg { display: inline-block; margin-top: 3px; }
 .contact > span { display: block; }
@@ -544,6 +551,7 @@ input:not([type="checkbox"]):focus-visible, select:focus-visible, textarea:focus
   tbody tr:hover td { background: var(--surface-2); }
   tbody tr.row-fail:hover td { background: var(--critical-bg); }
   .row-title:hover { text-decoration-color: currentColor; }
+  .filters a:not(.active):hover { background: var(--primary-tint); color: var(--primary-dark); }
   .btn:hover:enabled, a.btn:hover { background: var(--primary-dark); color: #fff; }
   .btn-secondary:hover:enabled, a.btn-secondary:hover { background: var(--primary-tint); color: var(--primary-dark); }
   .btn-danger:hover:enabled { background: #7f1a0c; }
