@@ -5,6 +5,12 @@ funzionalità, traffico, integrità dei file e segnali di malware, con alert aut
 
 Web Sentinel riduce i tempi di rilevamento dei problemi; non garantisce la sicurezza dei siti.
 
+> **In sviluppo: non è pronto per la produzione.** Sono completate due fasi su sei e la
+> revisione di sicurezza del codice è prevista solo nell'ultima.
+
+Piano a fasi: 1. fondamenta; 2. monitoraggio attivo e alert; 3. controlli funzionali,
+silenziamenti e manutenzioni; 4. agent sui server e integrità dei file; 5. analisi dei log e
+anomalie di traffico; 6. report, backup e rifinitura.
 
 ## Stato
 
@@ -119,3 +125,8 @@ da compilare nella scheda del sito. I siti caricati dal seed nascono senza autor
 Da completare nella fase 6. In sintesi: `docker compose up -d` senza il file di sviluppo,
 `SESSION_COOKIE_SECURE=true`, servizio `web` esposto solo tramite il reverse proxy aziendale
 (HTTPS, rete interna/VPN).
+
+## Licenza
+
+[MIT](LICENSE). I font IBM Plex in `app/ui/static/fonts` sono distribuiti con licenza SIL Open
+Font License (vedi `OFL.txt` nella stessa cartella).
