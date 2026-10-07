@@ -11,9 +11,9 @@ Web Sentinel riduce i tempi di rilevamento dei problemi; non garantisce la sicur
 **Fase 1 – Fondamenta**: struttura del progetto, database e migrazioni, inventario dei siti,
 accesso con ruoli, audit log, layout dell'interfaccia.
 
-**Fase 2 – in corso**: controlli `http`, `dns` e `tls` eseguiti dal worker sui siti attivi e
-autorizzati, esiti nella scheda sito, incidenti aperti e chiusi in automatico, mail di alert con
-promemoria e recovery, schermata Incidenti. Mancano il controllo `domain` e la Panoramica.
+**Fase 2 – Monitoraggio attivo e alert**: controlli `http`, `dns`, `tls` e `domain` eseguiti
+dal worker sui siti attivi e autorizzati; incidenti aperti e chiusi in automatico; mail di alert
+con promemoria e recovery; Panoramica, scheda sito con tempo di risposta e uptime, Incidenti.
 
 ## Avvio in locale, senza Docker
 
@@ -62,6 +62,10 @@ Servono Docker Engine con Compose e git.
   nello stesso incidente: un sito irraggiungibile produce una sola serie di mail.
 - Un certificato che scade entro 7 giorni apre un incidente di attenzione. Una risposta lenta
   compare nell'interfaccia ma non apre incidenti e non genera mail.
+- Un dominio che scade entro 30 giorni apre un incidente di attenzione, entro 7 giorni critico,
+  con un promemoria al giorno. La scadenza si legge via RDAP e, dove manca, via WHOIS: sono
+  richieste ai registri, non al sito. Se non è determinabile il controllo segnala attenzione
+  senza aprire incidenti.
 - Critico: una mail subito, a qualsiasi ora, un promemoria ogni 30 minuti e una mail di rientro
   con la durata. Attenzione: mail solo tra le 08:00 e le 20:00, non ripetuta per lo stesso
   problema entro 6 ore, più la mail di rientro.

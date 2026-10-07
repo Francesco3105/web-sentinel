@@ -38,6 +38,35 @@
 </section>
 {% endif %}
 
+<section class="card block">
+  <h2>Tempo di risposta, ultime 24 ore</h2>
+  {% if chart %}
+  <div class="chart-wrap">
+  <svg class="chart" viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img" aria-label="Tempo di risposta del controllo HTTP nelle ultime 24 ore">
+    {% for point in chart.failures %}
+    <rect class="chart-fail" x="{{ point.x - 3 }}" y="{{ chart.top }}" width="6" height="{{ chart.bottom - chart.top }}"><title>{{ point.label }}</title></rect>
+    {% endfor %}
+    {% for y, label in chart.y_ticks %}
+    <line class="chart-grid" x1="{{ chart.left }}" x2="{{ chart.right }}" y1="{{ y }}" y2="{{ y }}"/>
+    <text class="chart-label" x="{{ chart.left - 8 }}" y="{{ y + 4 }}" text-anchor="end">{{ label }}</text>
+    {% endfor %}
+    {% for x, label in chart.x_ticks %}
+    <text class="chart-label" x="{{ x }}" y="{{ chart.height - 8 }}" text-anchor="{{ 'start' if loop.first else 'end' if loop.last else 'middle' }}">{{ label }}</text>
+    {% endfor %}
+    {% for line in chart.lines %}
+    <polyline class="chart-line" points="{{ line }}"/>
+    {% endfor %}
+    {% for point in chart.points %}
+    <circle class="chart-hit" cx="{{ point.x }}" cy="{{ point.y }}" r="7"><title>{{ point.label }}</title></circle>
+    {% endfor %}
+  </svg>
+  </div>
+  <p class="muted chart-legend">Linea: tempo di risposta del controllo HTTP. Fasce tratteggiate: controllo fallito. Il valore di ogni punto compare al passaggio del puntatore.</p>
+  {% else %}
+  <p class="muted empty-inline">Nessun controllo HTTP nelle ultime 24 ore.</p>
+  {% endif %}
+</section>
+
 <div class="detail">
   <section class="card card-flush">
     <h2>Controlli</h2>
@@ -72,6 +101,8 @@
     <dl class="facts">
       <dt>Criticità</dt>
       <dd><span class="level level-{{ site.criticality }}">{{ criticality_labels[site.criticality] }}</span></dd>
+      <dt>Uptime 30 giorni</dt>
+      <dd class="mono">{{ uptime | percent }}</dd>
       <dt>Monitoraggio</dt>
       <dd>{% if site.active %}Attivo{% else %}<span class="badge badge-off">Sospeso</span>{% endif %}</dd>
       <dt>Autorizzazione</dt>

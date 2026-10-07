@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Panoramica{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Panoramica</h1></div>
+
+<dl class="figures">
+  <div>
+    <dt>Siti operativi</dt>
+    <dd><span class="mono">{{ operational }}</span> <span class="muted">su <span class="mono">{{ monitored }}</span> monitorati</span></dd>
+  </div>
+  <div>
+    <dt>Incidenti aperti</dt>
+    <dd>
+      <span class="mono">{{ incidents | length }}</span>
+      {% if incidents %}<a class="muted" href="/incidents">vedi tutti</a>{% endif %}
+    </dd>
+  </div>
+  <div>
+    <dt>Uptime 30 giorni</dt>
+    <dd><span class="mono">{{ uptime | percent }}</span></dd>
+  </div>
+  <div>
+    <dt>Scadenze entro 30 giorni</dt>
+    <dd><span class="mono">{{ expiries | length }}</span></dd>
+  </div>
+</dl>
+
+<div class="detail">
+  <section class="card card-flush">
+    <h2>Siti</h2>
+    <div class="table-wrap">
+      <table class="table-stack">
+        <thead><tr><th>Stato</th><th>Sito</th><th>Uptime 30 giorni</th><th>Incidenti aperti</th></tr></thead>
+        <tbody>
+          {% for site in sites %}
+          <tr class="row-{{ site.status }}">
+            <td class="cell-status"><span class="badge badge-{{ status_labels[site.status][1] }}">{{ status_labels[site.status][0] }}</span></td>
+            <td class="cell-main">
+              <a class="row-title" href="/sites/{{ site.id }}">{{ site.name }}</a><br>
+              <span class="mono muted wrap">{{ site.url }}</span>
+            </td>
+            <td data-label="Uptime 30 giorni" class="mono nowrap">{{ uptime_by_site.get(site.id) | percent }}</td>
+            <td data-label="Incidenti aperti" class="mono">{{ open_by_site.get(site.id, 0) }}</td>
+          </tr>
+          {% endfor %}
+          {% if not sites %}
+          <tr><td colspan="4" class="muted">Nessun sito in inventario.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div>
+    <section class="card card-flush block">
+      <h2>Incidenti aperti</h2>
+      {% if incidents %}
+      <ul class="rows">
+        {% for incident in incidents %}
+        <li>
+          <span class="badge badge-{{ severity_labels[incident.severity][1] }}">{{ severity_labels[incident.severity][0] }}</span>
+          <a class="row-title" href="/incidents/{{ incident.id }}">{{ incident.title }}</a>
+          <span class="muted">{{ site_by_id[incident.site_id].name if incident.site_id in site_by_id else '' }}, dal <span class="mono">{{ incident.opened_at | dt }}</span></span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted empty">Nessun incidente aperto.</p>
+      {% endif %}
+    </section>
+
+    <section class="card card-flush">
+      <h2>Scadenze entro 30 giorni</h2>
+      {% if expiries %}
+      <ul class="rows">
+        {% for item in expiries %}
+        <li>
+          <span class="badge badge-{{ 'critical' if item.days < 7 else 'warning' }}">{{ 'Scaduto' if item.days < 0 else item.days ~ ' giorni' }}</span>
+          <a class="row-title" href="/sites/{{ item.site.id }}">{{ item.site.name }}</a>
+          <span class="muted">{{ check_labels[item.check.type] }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted empty">Nessun certificato o dominio in scadenza.</p>
+      {% endif %}
+    </section>
+  </div>
+</div>
+<p class="muted note">L'uptime è la quota dei controlli HTTP non falliti negli ultimi 30 giorni. Sicurezza e manutenzioni programmate arriveranno con le fasi successive.</p>
+{% endblock %}

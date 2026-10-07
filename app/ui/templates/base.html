@@ -15,6 +15,7 @@
     <a class="brand" href="/"><img src="{{ url_for('static', path='img/shield-light.svg') }}" alt="" width="22" height="25">Web Sentinel</a>
     {% if user %}
     <nav class="nav" aria-label="Menu principale">
+      <a href="/" {% if request.url.path == '/' %}class="active" aria-current="page"{% endif %}>Panoramica</a>
       <a href="/sites" {% if request.url.path.startswith('/sites') %}class="active" aria-current="page"{% endif %}>Siti</a>
       <a href="/incidents" {% if request.url.path.startswith('/incidents') %}class="active" aria-current="page"{% endif %}>Incidenti</a>
       {% if user.role == 'admin' %}

@@ -66,6 +66,13 @@ def format_datetime(value: datetime | None, fmt: str = "%d/%m/%Y %H:%M") -> str:
     return value.astimezone(ZoneInfo(get_settings().app_timezone)).strftime(fmt)
 
 
+def format_percent(value: float | None) -> str:
+    if value is None:
+        return "–"
+    text = "100" if value >= 99.995 else f"{value:.2f}".replace(".", ",")
+    return f"{text} %"
+
+
 def format_interval(seconds: int) -> str:
     if seconds % 3600 == 0:
         return f"{seconds // 3600} h"
@@ -75,6 +82,7 @@ def format_interval(seconds: int) -> str:
 
 
 templates.env.filters["dt"] = format_datetime
+templates.env.filters["percent"] = format_percent
 templates.env.filters["interval"] = format_interval
 templates.env.globals.update(
     # Changes at every start, so browsers never keep a stale stylesheet or script.

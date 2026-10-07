@@ -12,7 +12,7 @@ from app.auth.deps import CsrfError, NotAuthenticated, PermissionDenied
 from app.config import get_settings
 from app.db.models import User
 from app.db.session import get_sessionmaker
-from app.ui import routes_admin, routes_auth, routes_incidents, routes_sites
+from app.ui import routes_admin, routes_auth, routes_incidents, routes_overview, routes_sites
 from app.ui.rendering import UI_DIR, render
 
 ERROR_MESSAGES = {
@@ -60,6 +60,7 @@ def create_app() -> FastAPI:
     app.mount("/static", StaticFiles(directory=UI_DIR / "static"), name="static")
 
     app.include_router(routes_auth.router)
+    app.include_router(routes_overview.router)
     app.include_router(routes_sites.router)
     app.include_router(routes_incidents.router)
     app.include_router(routes_admin.router)

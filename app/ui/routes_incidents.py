@@ -11,6 +11,7 @@ router = APIRouter(prefix="/incidents", dependencies=[Depends(csrf_protect)])
 
 PAGE_SIZE = 100
 FILTERS = {"aperti": "Aperti", "chiusi": "Chiusi", "tutti": "Tutti"}
+SEVERITY_RANK = {"malware": 0, "security": 1, "critical": 2, "warning": 3, "info": 4}
 
 
 @router.get("", response_class=HTMLResponse)
@@ -22,7 +23,15 @@ def incident_list(request: Request, db: DbDep, user: UserDep, stato: str = "aper
         query = query.where(Incident.status != IncidentStatus.CLOSED)
     elif stato == "chiusi":
         query = query.where(Incident.status == IncidentStatus.CLOSED)
-    incidents = db.scalars(query).all()
+    # Open incidents first, the most serious on top; then the most recent.
+    incidents = sorted(
+        db.scalars(query).all(),
+        key=lambda item: (
+            item.status == IncidentStatus.CLOSED,
+            SEVERITY_RANK.get(item.severity, len(SEVERITY_RANK)),
+            -item.id,
+        ),
+    )
     sites = {site.id: site for site in db.scalars(select(Site))}
     context = {"incidents": incidents, "sites": sites, "filters": FILTERS, "current": stato}
     return render(request, "incidents/list.html", context, db=db, user=user)

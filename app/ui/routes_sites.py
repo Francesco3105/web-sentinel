@@ -20,6 +20,7 @@ from app.db.models import (
     Site,
     SiteContact,
 )
+from app.ui import stats
 from app.ui.forms import ContactData, SiteForm
 from app.ui.rendering import flash, render
 from app.worker.scheduler import run_and_record, runnable_checks
@@ -104,11 +105,6 @@ def _url_taken(db: Session, url: str, exclude_id: int | None = None) -> bool:
     return db.scalar(query) is not None
 
 
-@router.get("/")
-def home() -> Response:
-    return RedirectResponse("/sites", status_code=303)
-
-
 @router.get("/sites", response_class=HTMLResponse)
 def site_list(request: Request, db: DbDep, user: UserDep) -> Response:
     by_criticality = case(
@@ -190,6 +186,8 @@ def site_detail(site_id: int, request: Request, db: DbDep, user: UserDep) -> Res
         "site": site,
         "last_results": last_results,
         "open_incidents": open_incidents,
+        "chart": stats.response_chart(db, site),
+        "uptime": stats.uptime_by_site(db).get(site.id),
         "can_run": user.role in CAN_RUN_CHECKS,
         "runnable": bool(runnable_checks(site)),
     }

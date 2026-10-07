@@ -2,7 +2,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.models import AuditLog, Site, User
+from app.db.models import AuditLog, CheckResult, Site, User
 from tests.conftest import login
 
 VALID = {
@@ -145,3 +145,22 @@ def test_missing_site_is_404(client: TestClient, admin: User) -> None:
     assert 'href="/admin/audit"' in response.text
     client.cookies.clear()
     assert 'href="/admin/audit"' not in client.get("/missing").text
+
+
+def test_overview_and_site_figures(client: TestClient, admin: User, db: Session) -> None:
+    token = login(client, admin.email)
+    _create(client, token)
+    site = db.scalars(select(Site)).one()
+    http = next(check for check in site.checks if check.type == "http")
+    for status, value in (("ok", 180.0), ("ok", 220.0), ("fail", None), ("ok", 200.0)):
+        db.add(
+            CheckResult(check_id=http.id, site_id=site.id, status=status, value=value, message="x")
+        )
+    db.commit()
+
+    page = client.get("/").text
+    assert "Panoramica" in page and "75,00 %" in page and "Nessun incidente aperto." in page
+
+    page = client.get(f"/sites/{site.id}").text
+    assert 'class="chart"' in page and page.count("chart-fail") == 1
+    assert page.count("<polyline") == 2 and "75,00 %" in page
